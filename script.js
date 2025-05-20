@@ -39,36 +39,22 @@ document.addEventListener('DOMContentLoaded', () => {
           const tdFora = document.createElement('td');
           tdFora.textContent = casa.h2h?.away ?? '-';
 
-          // Odds Mais/Menos 2.5 gols (totals) - aceita ponto 2.25, 2.5, etc.
+          // Odds Mais/Menos 2.5 gols (totals)
           const tdMais25 = document.createElement('td');
           const tdMenos25 = document.createElement('td');
 
-          let oddOver = '-';
-          let oddUnder = '-';
-
-          if (casa.over && casa.over.point >= 2.25) {
-            oddOver = casa.over.price.toFixed(2);
-            if (casa.over.point !== 2.5) {
-              oddOver += ` (${casa.over.point})`;
-            }
-          }
-
-          if (casa.under && casa.under.point >= 2.25) {
-            oddUnder = casa.under.price.toFixed(2);
-            if (casa.under.point !== 2.5) {
-              oddUnder += ` (${casa.under.point})`;
-            }
-          }
-
-          tdMais25.textContent = oddOver;
-          tdMenos25.textContent = oddUnder;
-
           if (typeof casa.over?.price === 'number') {
+            tdMais25.textContent = casa.over.price.toFixed(2);
             tdMais25.style.backgroundColor = casa.over.price >= 2.5 ? 'lightgreen' : 'lightcoral';
+          } else {
+            tdMais25.textContent = '-';
           }
 
           if (typeof casa.under?.price === 'number') {
+            tdMenos25.textContent = casa.under.price.toFixed(2);
             tdMenos25.style.backgroundColor = casa.under.price >= 2.5 ? 'lightgreen' : 'lightcoral';
+          } else {
+            tdMenos25.textContent = '-';
           }
 
           // Colunas extras
