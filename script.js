@@ -25,9 +25,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const tr = document.createElement('tr');
 
+          // Nome do jogo
           const tdJogo = document.createElement('td');
           tdJogo.textContent = nomeJogo;
 
+          // Odds 1X2 (h2h)
           const tdCasa = document.createElement('td');
           tdCasa.textContent = casa.h2h?.home ?? '-';
 
@@ -37,23 +39,39 @@ document.addEventListener('DOMContentLoaded', () => {
           const tdFora = document.createElement('td');
           tdFora.textContent = casa.h2h?.away ?? '-';
 
+          // Odds Mais/Menos 2.5 gols (totals) - aceita ponto 2.25, 2.5, etc.
           const tdMais25 = document.createElement('td');
           const tdMenos25 = document.createElement('td');
 
-          const oddOver = parseFloat(casa.over?.price || 0);
-          const oddUnder = parseFloat(casa.under?.price || 0);
+          let oddOver = '-';
+          let oddUnder = '-';
 
-          // Exibir apenas o número da odd, sem (point)
-          tdMais25.textContent = oddOver > 0 ? oddOver.toFixed(2) : '-';
-          tdMenos25.textContent = oddUnder > 0 ? oddUnder.toFixed(2) : '-';
+          if (casa.over && casa.over.point >= 2.25) {
+            oddOver = casa.over.price.toFixed(2);
+            if (casa.over.point !== 2.5) {
+              oddOver += ` (${casa.over.point})`;
+            }
+          }
 
-          // Cores: verde >= 2.5, vermelho < 2.5
-          if (oddOver >= 2.5) tdMais25.style.backgroundColor = 'lightgreen';
-          else if (oddOver > 0) tdMais25.style.backgroundColor = 'lightcoral';
+          if (casa.under && casa.under.point >= 2.25) {
+            oddUnder = casa.under.price.toFixed(2);
+            if (casa.under.point !== 2.5) {
+              oddUnder += ` (${casa.under.point})`;
+            }
+          }
 
-          if (oddUnder >= 2.5) tdMenos25.style.backgroundColor = 'lightgreen';
-          else if (oddUnder > 0) tdMenos25.style.backgroundColor = 'lightcoral';
+          tdMais25.textContent = oddOver;
+          tdMenos25.textContent = oddUnder;
 
+          if (typeof casa.over?.price === 'number') {
+            tdMais25.style.backgroundColor = casa.over.price >= 2.5 ? 'lightgreen' : 'lightcoral';
+          }
+
+          if (typeof casa.under?.price === 'number') {
+            tdMenos25.style.backgroundColor = casa.under.price >= 2.5 ? 'lightgreen' : 'lightcoral';
+          }
+
+          // Colunas extras
           const colunasExtras = 9;
           const colunasFaltando = Array.from({ length: colunasExtras }, () => {
             const td = document.createElement('td');
