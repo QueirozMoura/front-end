@@ -39,19 +39,31 @@ document.addEventListener('DOMContentLoaded', () => {
           const tdFora = document.createElement('td');
           tdFora.textContent = casa.h2h?.away ?? '-';
 
-          // Odds Mais/Menos 2.5 gols (totals)
+          // Odds Mais/Menos 2.5 gols
           const tdMais25 = document.createElement('td');
           const tdMenos25 = document.createElement('td');
 
+          // Over
           if (typeof casa.over?.price === 'number') {
-            tdMais25.textContent = casa.over.price.toFixed(2);
-            tdMais25.style.backgroundColor = casa.over.price >= 2.5 ? 'lightgreen' : 'lightcoral';
+            let valor = casa.over.price.toFixed(2);
+
+            // TESTE: força a exibição de uma odd maior que 2.5 para você ver a cor
+            if (casa.over.price < 2.5) {
+              valor = '2.60'; // força o valor
+              tdMais25.style.backgroundColor = 'lightgreen';
+            } else {
+              tdMais25.style.backgroundColor = 'lightgreen';
+            }
+
+            tdMais25.textContent = valor;
           } else {
             tdMais25.textContent = '-';
           }
 
+          // Under
           if (typeof casa.under?.price === 'number') {
-            tdMenos25.textContent = casa.under.price.toFixed(2);
+            const valor = casa.under.price.toFixed(2);
+            tdMenos25.textContent = valor;
             tdMenos25.style.backgroundColor = casa.under.price >= 2.5 ? 'lightgreen' : 'lightcoral';
           } else {
             tdMenos25.textContent = '-';
