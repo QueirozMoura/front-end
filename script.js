@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function buscarOdds() {
     try {
-      const response = await fetch('https://tabela-aposta.onrender.com/api/odds/futebol');
+      const response = await fetch('http://localhost:3000/api/odds/futebol'); // ajuste a URL conforme seu backend
       if (!response.ok) throw new Error('Erro ao buscar dados');
 
       const dados = await response.json();
@@ -25,42 +25,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const tr = document.createElement('tr');
 
-          // Nome do jogo
+          // Coluna: Nome do jogo
           const tdJogo = document.createElement('td');
           tdJogo.textContent = nomeJogo;
 
-          // Odds 1X2 (h2h)
+          // Odds 1X2 (home = casa, draw = empate, away = fora)
           const tdCasa = document.createElement('td');
-          tdCasa.textContent = casa.h2h?.home ?? '-';
+          tdCasa.textContent = casa.over?.price ? '-' : '-'; // Não temos odds 1X2 da API de totals, mantém "-"
 
           const tdEmpate = document.createElement('td');
-          tdEmpate.textContent = casa.h2h?.draw ?? '-';
+          tdEmpate.textContent = '-'; // Odds empate (não disponível nesta API de totais)
 
           const tdFora = document.createElement('td');
-          tdFora.textContent = casa.h2h?.away ?? '-';
+          tdFora.textContent = '-'; // Odds fora (não disponível)
 
           // Odds Mais/Menos 2.5 gols
           const tdMais25 = document.createElement('td');
           const tdMenos25 = document.createElement('td');
 
-          // Over
           if (typeof casa.over?.price === 'number') {
-            let valor = casa.over.price.toFixed(2);
-
-            // TESTE: força a exibição de uma odd maior que 2.5 para você ver a cor
-            if (casa.over.price < 2.5) {
-              valor = '2.60'; // força o valor
-              tdMais25.style.backgroundColor = 'lightgreen';
-            } else {
-              tdMais25.style.backgroundColor = 'lightgreen';
-            }
-
+            const valor = casa.over.price.toFixed(2);
             tdMais25.textContent = valor;
+            tdMais25.style.backgroundColor = casa.over.price >= 2.5 ? 'lightgreen' : 'lightcoral';
           } else {
             tdMais25.textContent = '-';
           }
 
-          // Under
           if (typeof casa.under?.price === 'number') {
             const valor = casa.under.price.toFixed(2);
             tdMenos25.textContent = valor;
@@ -69,9 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
             tdMenos25.textContent = '-';
           }
 
-          // Colunas extras
-          const colunasExtras = 9;
-          const colunasFaltando = Array.from({ length: colunasExtras }, () => {
+          // Colunas extras (preenchidas com "-")
+          const colunasExtrasCount = 10; // Ajustado para completar 16 colunas no total
+          const colunasExtras = Array.from({ length: colunasExtrasCount }, () => {
             const td = document.createElement('td');
             td.textContent = '-';
             return td;
@@ -83,12 +73,11 @@ document.addEventListener('DOMContentLoaded', () => {
           tr.appendChild(tdFora);
           tr.appendChild(tdMais25);
           tr.appendChild(tdMenos25);
-          colunasFaltando.forEach(td => tr.appendChild(td));
+          colunasExtras.forEach(td => tr.appendChild(td));
 
           tabela.appendChild(tr);
         });
       });
-
     } catch (error) {
       console.error('Erro ao buscar odds:', error);
       tabela.innerHTML = `<tr><td colspan="16">Erro ao carregar os dados</td></tr>`;
