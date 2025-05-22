@@ -23,71 +23,71 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       dados.forEach(jogo => {
-        const nomeJogo = jogo.jogo;
+        const nomeJogo = `${jogo.timeCasa} x ${jogo.timeFora}`;
+        const campeonato = jogo.liga || '-';
+        const data = jogo.data || '-';
 
         if (!jogo.odds || jogo.odds.length === 0) {
           const tr = document.createElement('tr');
-          const td = document.createElement('td');
-          td.colSpan = 16;
-          td.textContent = `${nomeJogo} - Sem odds disponíveis`;
-          tr.appendChild(td);
+          tr.innerHTML = `<td colspan="16">${nomeJogo} - Sem odds disponíveis</td>`;
           tabela.appendChild(tr);
           return;
         }
+
+        // Descobre qual casa tem maior odd em over/under
+        let maiorOver = 0;
+        let maiorUnder = 0;
+
+        jogo.odds.forEach(casa => {
+          if (!casasPermitidas.includes(casa.casa)) return;
+          if (casa.over?.price > maiorOver) maiorOver = casa.over.price;
+          if (casa.under?.price > maiorUnder) maiorUnder = casa.under.price;
+        });
 
         jogo.odds.forEach(casa => {
           if (!casasPermitidas.includes(casa.casa)) return;
 
           const tr = document.createElement('tr');
 
-          // Coluna: Nome do jogo
-          const tdJogo = document.createElement('td');
-          tdJogo.textContent = nomeJogo;
+          // Colunas iniciais
+          tr.innerHTML += `<td>${nomeJogo}</td>`;
+          tr.innerHTML += `<td>${campeonato}</td>`;
+          tr.innerHTML += `<td>${data}</td>`;
+          tr.innerHTML += `<td>${casa.casa}</td>`;
 
-          // Coluna: Casa de aposta
-          const tdCasa = document.createElement('td');
-          tdCasa.textContent = casa.casa;
-
-          // Colunas Empate e Fora (não disponíveis no mock, colocar '-')
-          const tdEmpate = document.createElement('td');
-          tdEmpate.textContent = '-';
-
-          const tdFora = document.createElement('td');
-          tdFora.textContent = '-';
-
-          // Colunas Mais 2.5 e Menos 2.5 gols
-          const tdMais25 = document.createElement('td');
+          // Odds Over 2.5
+          const tdOver = document.createElement('td');
           if (casa.over && typeof casa.over.price === 'number') {
-            tdMais25.textContent = casa.over.price.toFixed(2);
-            tdMais25.style.backgroundColor = casa.over.price >= 2.5 ? 'lightgreen' : 'lightcoral';
+            tdOver.textContent = casa.over.price.toFixed(2);
+            if (casa.over.price === maiorOver) {
+              tdOver.style.backgroundColor = 'lightgreen';
+            }
           } else {
-            tdMais25.textContent = '-';
+            tdOver.textContent = '-';
           }
 
-          const tdMenos25 = document.createElement('td');
+          // Odds Under 2.5
+          const tdUnder = document.createElement('td');
           if (casa.under && typeof casa.under.price === 'number') {
-            tdMenos25.textContent = casa.under.price.toFixed(2);
-            tdMenos25.style.backgroundColor = casa.under.price >= 2.5 ? 'lightgreen' : 'lightcoral';
+            tdUnder.textContent = casa.under.price.toFixed(2);
+            if (casa.under.price === maiorUnder) {
+              tdUnder.style.backgroundColor = 'lightblue';
+            }
           } else {
-            tdMenos25.textContent = '-';
+            tdUnder.textContent = '-';
           }
 
-          // Colunas extras para completar 16 colunas da tabela
+          tr.appendChild(tdOver);
+          tr.appendChild(tdUnder);
+
+          // Colunas extras para completar 16
           const colunasExtras = Array.from({ length: 10 }, () => {
             const td = document.createElement('td');
             td.textContent = '-';
             return td;
           });
 
-          // Monta a linha da tabela
-          tr.appendChild(tdJogo);
-          tr.appendChild(tdCasa);
-          tr.appendChild(tdEmpate);
-          tr.appendChild(tdFora);
-          tr.appendChild(tdMais25);
-          tr.appendChild(tdMenos25);
           colunasExtras.forEach(td => tr.appendChild(td));
-
           tabela.appendChild(tr);
         });
       });
@@ -98,7 +98,5 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   btnAtualizar.addEventListener('click', buscarOdds);
-
-  // Busca os dados assim que a página carrega
   buscarOdds();
 });
