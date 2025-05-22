@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const url = 'https://tabela-aposta.onrender.com/api/odds/futebol';
 
     try {
-      // Exibe mensagem de carregamento enquanto busca os dados
+      // Mensagem de carregamento enquanto busca os dados
       tabela.innerHTML = `<tr><td colspan="10">Carregando dados...</td></tr>`;
 
       const response = await fetch(url);
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      tabela.innerHTML = ''; // limpa tabela antes de preencher
+      tabela.innerHTML = ''; // limpa a tabela antes de preencher
 
       dados.forEach(jogo => {
         const nomeJogo = `${jogo.timeCasa} x ${jogo.timeFora}`;
@@ -70,6 +70,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Atualiza tabela ao clicar no botão
   btnAtualizar.addEventListener('click', buscarOdds);
-  buscarOdds(); // busca inicial ao carregar a página
+
+  // Busca inicial ao carregar a página
+  buscarOdds();
 });
