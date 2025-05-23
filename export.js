@@ -1,16 +1,27 @@
 function exportTableToExcel() {
-    // Seleciona a tabela pelo id
-    var table = document.getElementById("tabela-jogos");
-    var html = table.outerHTML;
+  const table = document.getElementById("tabela-jogos");
+  if (!table) {
+    alert('Tabela não encontrada para exportação!');
+    return;
+  }
 
-    // Prepara o conteúdo para exportação em formato Excel
-    var url = 'data:application/vnd.ms-excel,' + encodeURIComponent(html);
+  const html = table.outerHTML;
 
-    // Cria um link temporário para download
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'tabela_odds.xls';
+  // Cria um blob com o conteúdo da tabela e o tipo para Excel
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
 
-    // Dispara o clique para iniciar o download
-    a.click();
+  // Cria URL para o blob
+  const url = URL.createObjectURL(blob);
+
+  // Cria link temporário para download
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'tabela_odds.xls';
+
+  document.body.appendChild(a);
+  a.click();
+
+  // Remove o link temporário e revoga a URL
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
