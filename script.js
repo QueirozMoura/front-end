@@ -4,9 +4,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabelaBody = document.querySelector('#tabela-jogos tbody');
   const btnAtualizar = document.getElementById('atualizar');
 
-  btnAtualizar.addEventListener('click', () => {
-    carregarOdds();
-  });
+  if (btnAtualizar) {
+    btnAtualizar.addEventListener('click', () => {
+      carregarOdds();
+    });
+  } else {
+    console.warn('Botão Atualizar não encontrado!');
+  }
 
   async function carregarOdds() {
     tabelaBody.innerHTML = ''; // limpa a tabela
@@ -54,6 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Carrega odds ao abrir a página
+  // Carrega odds automaticamente ao abrir a página
   carregarOdds();
 });
