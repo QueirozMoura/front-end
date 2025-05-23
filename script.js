@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnAtualizar = document.getElementById('atualizar');
 
   const casasPermitidas = ['Betano', 'KTO', 'Pinnacle', 'Bet365', 'Superbet'];
-  const rapidApiKey = '3dc7cad55emshe06e6a03bf1fc4fp1eea8ajsn9b1efadb2d07'; // Coloque sua chave do RapidAPI
 
   function criarTd(texto) {
     const td = document.createElement('td');
@@ -27,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (bk.under && bk.under === maiorUnder) tdUnder.style.backgroundColor = 'lightblue';
     tr.appendChild(tdUnder);
 
-    // Colunas extras com base na segunda API
     tr.appendChild(criarTd(oddsExtra['Casa/Casa'] || '-'));
     tr.appendChild(criarTd(oddsExtra['Casa/Empate'] || '-'));
     tr.appendChild(criarTd(oddsExtra['Casa/Fora'] || '-'));
@@ -37,41 +35,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function buscarOddsExtras(timeCasa, timeFora, data) {
-    const url = `https://api-football-v1.p.rapidapi.com/v3/odds?bookmaker=6&market=ht_ft&date=${data}`;
-
+    const url = `https://tabela-aposta.onrender.com/api/odds-extras/htft?timeCasa=${encodeURIComponent(timeCasa)}&timeFora=${encodeURIComponent(timeFora)}&data=${data}`;
     try {
-      const res = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'x-rapidapi-key': rapidApiKey,
-          'x-rapidapi-host': 'api-football-v1.p.rapidapi.com'
-        }
-      });
-
-      const json = await res.json();
-
-      const oddsExtras = {};
-      const resultados = json.response || [];
-
-      resultados.forEach(evento => {
-        const homeTeam = evento.teams?.home?.name;
-        const awayTeam = evento.teams?.away?.name;
-
-        if (
-          homeTeam?.toLowerCase().includes(timeCasa.toLowerCase()) &&
-          awayTeam?.toLowerCase().includes(timeFora.toLowerCase())
-        ) {
-          const bets = evento.bookmakers?.[0]?.bets?.[0]?.values || [];
-
-          bets.forEach(bet => {
-            oddsExtras[bet.value] = parseFloat(bet.odd).toFixed(2);
-          });
-        }
-      });
-
-      return oddsExtras;
+      const res = await fetch(url);
+      return await res.json();
     } catch (error) {
-      console.error('Erro na API extra:', error);
+      console.error('Erro ao buscar odds extras via backend:', error);
       return {};
     }
   }
@@ -92,29 +61,31 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      tabela.innerHTML = ''; // limpa a tabela antes de preencher
+      const linhasComOdds = await Promise.all(
+        dados.map(async (jogo) => {
+          const nomeJogo = `${jogo.timeCasa} x ${jogo.timeFora}`;
+          const dataJogo = jogo.data?.split('T')[0];
 
-      for (const jogo of dados) {
-        const nomeJogo = `${jogo.timeCasa} x ${jogo.timeFora}`;
-        const dataJogo = jogo.data?.split('T')[0]; // "2025-05-25"
+          let maiorOver = 0;
+          let maiorUnder = 0;
 
-        let maiorOver = 0;
-        let maiorUnder = 0;
+          jogo.odds.forEach(bk => {
+            if (!casasPermitidas.includes(bk.casa)) return;
+            if (bk.over && bk.over > maiorOver) maiorOver = bk.over;
+            if (bk.under && bk.under > maiorUnder) maiorUnder = bk.under;
+          });
 
-        jogo.odds.forEach(bk => {
-          if (!casasPermitidas.includes(bk.casa)) return;
-          if (bk.over && bk.over > maiorOver) maiorOver = bk.over;
-          if (bk.under && bk.under > maiorUnder) maiorUnder = bk.under;
-        });
+          const oddsExtras = await buscarOddsExtras(jogo.timeCasa, jogo.timeFora, dataJogo);
 
-        const oddsExtras = await buscarOddsExtras(jogo.timeCasa, jogo.timeFora, dataJogo);
+          return jogo.odds
+            .filter(bk => casasPermitidas.includes(bk.casa))
+            .map(bk => criarLinha(nomeJogo, bk, maiorOver, maiorUnder, oddsExtras));
+        })
+      );
 
-        jogo.odds.forEach(bk => {
-          if (!casasPermitidas.includes(bk.casa)) return;
-          const linha = criarLinha(nomeJogo, bk, maiorOver, maiorUnder, oddsExtras);
-          tabela.appendChild(linha);
-        });
-      }
+      tabela.innerHTML = '';
+      linhasComOdds.flat().forEach(linha => tabela.appendChild(linha));
+
     } catch (error) {
       console.error('Erro ao buscar odds:', error);
       tabela.innerHTML = `<tr><td colspan="10">Erro ao carregar os dados</td></tr>`;
@@ -122,5 +93,5 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   btnAtualizar.addEventListener('click', buscarOdds);
-  buscarOdds(); // busca inicial
+  buscarOdds(); // Busca inicial
 });
