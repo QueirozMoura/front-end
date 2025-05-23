@@ -1,66 +1,62 @@
-// URL base da sua API backend
-const BASE_URL = 'http://localhost:3000';
+const baseUrl = 'https://tabela-aposta.onrender.com';
 
-// Função para formatar a data em YYYY-MM-DD (API-Football espera esse formato)
-function formatDate(dateString) {
-  const date = new Date(dateString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+const tabelaBody = document.querySelector('#tabela-jogos tbody');
+const btnAtualizar = document.getElementById('atualizar');
 
-// Função para buscar as odds principais (H2H e Totals)
-async function fetchOdds() {
+btnAtualizar.addEventListener('click', () => {
+  carregarOdds();
+});
+
+async function carregarOdds() {
+  tabelaBody.innerHTML = ''; // limpa tabela
+
   try {
-    const response = await fetch(`${BASE_URL}/api/odds/futebol`);
-    const jogos = await response.json();
-
-    const tabela = document.getElementById('tabela-odds');
-    tabela.innerHTML = ''; // limpa tabela antes de preencher
+    const res = await axios.get(`${baseUrl}/api/odds/futebol`);
+    const jogos = res.data;
 
     for (const jogo of jogos) {
-      // Para cada casa de apostas, vamos criar uma linha na tabela
-      for (const casa of jogo.odds) {
-        // Buscar odds extras do mercado HT/FT para preencher colunas extras
-        const dataFormatada = formatDate(jogo.data);
+      // Para cada jogo, pegamos os dados principais (h2h, over/under)
+      // E também pegamos as odds extras Half Time / Full Time
 
-        // Busca odds extras via API
-        const oddsExtras = await fetch(
-          `${BASE_URL}/api/odds-extras/htft?timeCasa=${encodeURIComponent(jogo.timeCasa)}&timeFora=${encodeURIComponent(jogo.timeFora)}&data=${dataFormatada}`
-        ).then(res => res.json()).catch(() => ({}));
+      for (const casaAposta of jogo.odds) {
+        // Buscar odds extras via backend
+        const extras = await buscarOddsExtras(jogo.timeCasa, jogo.timeFora, jogo.data);
 
-        // Criar linha da tabela
+        // Montar a linha da tabela
         const tr = document.createElement('tr');
 
         tr.innerHTML = `
-          <td>${jogo.timeCasa}</td>
-          <td>${jogo.timeFora}</td>
-          <td>${new Date(jogo.data).toLocaleString()}</td>
-          <td>${casa.casa}</td>
-          <td>${casa.h2h?.home ?? '-'}</td>
-          <td>${casa.h2h?.draw ?? '-'}</td>
-          <td>${casa.h2h?.away ?? '-'}</td>
-          <td>${casa.over ?? '-'}</td>
-          <td>${casa.under ?? '-'}</td>
-          <td>${oddsExtras['Casa/Casa'] ?? '-'}</td>
-          <td>${oddsExtras['Casa/Empate'] ?? '-'}</td>
-          <td>${oddsExtras['Casa/Fora'] ?? '-'}</td>
-          <td>${oddsExtras['Empate/Casa'] ?? '-'}</td>
+          <td>${jogo.timeCasa} x ${jogo.timeFora}</td>
+          <td>${casaAposta.h2h?.home ?? '-'}</td>
+          <td>${casaAposta.h2h?.draw ?? '-'}</td>
+          <td>${casaAposta.h2h?.away ?? '-'}</td>
+          <td>${casaAposta.over ?? '-'}</td>
+          <td>${casaAposta.under ?? '-'}</td>
+          <td>${extras['Casa/Casa'] ?? '-'}</td>
+          <td>${extras['Casa/Empate'] ?? '-'}</td>
+          <td>${extras['Casa/Fora'] ?? '-'}</td>
+          <td>${extras['Empate/Casa'] ?? '-'}</td>
         `;
 
-        tabela.appendChild(tr);
+        tabelaBody.appendChild(tr);
       }
     }
   } catch (error) {
-    console.error('Erro ao buscar odds:', error);
+    console.error('Erro ao carregar odds:', error);
   }
 }
 
-// Botão para atualizar tabela
-document.getElementById('btn-atualizar').addEventListener('click', () => {
-  fetchOdds();
-});
+async function buscarOddsExtras(timeCasa, timeFora, data) {
+  try {
+    const res = await axios.get(`${baseUrl}/api/odds-extras/htft`, {
+      params: { timeCasa, timeFora, data }
+    });
+    return res.data;
+  } catch (error) {
+    console.error('Erro ao buscar odds extras:', error.response?.data ?? error.message);
+    return {};
+  }
+}
 
-// Carrega dados ao abrir a página
-fetchOdds();
+// Carregar odds ao abrir a página automaticamente
+window.onload = carregarOdds;
