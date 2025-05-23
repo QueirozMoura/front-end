@@ -1,97 +1,66 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const tabela = document.getElementById('tabela-jogos').getElementsByTagName('tbody')[0];
-  const btnAtualizar = document.getElementById('atualizar');
+// URL base da sua API backend
+const BASE_URL = 'http://localhost:3000';
 
-  const casasPermitidas = ['Betano', 'KTO', 'Pinnacle', 'Bet365', 'Superbet'];
+// Função para formatar a data em YYYY-MM-DD (API-Football espera esse formato)
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
-  function criarTd(texto) {
-    const td = document.createElement('td');
-    td.textContent = texto;
-    return td;
-  }
+// Função para buscar as odds principais (H2H e Totals)
+async function fetchOdds() {
+  try {
+    const response = await fetch(`${BASE_URL}/api/odds/futebol`);
+    const jogos = await response.json();
 
-  function criarLinha(nomeJogo, bk, maiorOver, maiorUnder, oddsExtra = {}) {
-    const tr = document.createElement('tr');
+    const tabela = document.getElementById('tabela-odds');
+    tabela.innerHTML = ''; // limpa tabela antes de preencher
 
-    tr.appendChild(criarTd(nomeJogo));
-    tr.appendChild(criarTd(bk.h2h?.home?.toFixed(2) || '-'));
-    tr.appendChild(criarTd(bk.h2h?.draw?.toFixed(2) || '-'));
-    tr.appendChild(criarTd(bk.h2h?.away?.toFixed(2) || '-'));
+    for (const jogo of jogos) {
+      // Para cada casa de apostas, vamos criar uma linha na tabela
+      for (const casa of jogo.odds) {
+        // Buscar odds extras do mercado HT/FT para preencher colunas extras
+        const dataFormatada = formatDate(jogo.data);
 
-    const tdOver = criarTd(bk.over?.toFixed(2) || '-');
-    if (bk.over && bk.over === maiorOver) tdOver.style.backgroundColor = 'lightgreen';
-    tr.appendChild(tdOver);
+        // Busca odds extras via API
+        const oddsExtras = await fetch(
+          `${BASE_URL}/api/odds-extras/htft?timeCasa=${encodeURIComponent(jogo.timeCasa)}&timeFora=${encodeURIComponent(jogo.timeFora)}&data=${dataFormatada}`
+        ).then(res => res.json()).catch(() => ({}));
 
-    const tdUnder = criarTd(bk.under?.toFixed(2) || '-');
-    if (bk.under && bk.under === maiorUnder) tdUnder.style.backgroundColor = 'lightblue';
-    tr.appendChild(tdUnder);
+        // Criar linha da tabela
+        const tr = document.createElement('tr');
 
-    tr.appendChild(criarTd(oddsExtra['Casa/Casa'] || '-'));
-    tr.appendChild(criarTd(oddsExtra['Casa/Empate'] || '-'));
-    tr.appendChild(criarTd(oddsExtra['Casa/Fora'] || '-'));
-    tr.appendChild(criarTd(oddsExtra['Empate/Casa'] || '-'));
+        tr.innerHTML = `
+          <td>${jogo.timeCasa}</td>
+          <td>${jogo.timeFora}</td>
+          <td>${new Date(jogo.data).toLocaleString()}</td>
+          <td>${casa.casa}</td>
+          <td>${casa.h2h?.home ?? '-'}</td>
+          <td>${casa.h2h?.draw ?? '-'}</td>
+          <td>${casa.h2h?.away ?? '-'}</td>
+          <td>${casa.over ?? '-'}</td>
+          <td>${casa.under ?? '-'}</td>
+          <td>${oddsExtras['Casa/Casa'] ?? '-'}</td>
+          <td>${oddsExtras['Casa/Empate'] ?? '-'}</td>
+          <td>${oddsExtras['Casa/Fora'] ?? '-'}</td>
+          <td>${oddsExtras['Empate/Casa'] ?? '-'}</td>
+        `;
 
-    return tr;
-  }
-
-  async function buscarOddsExtras(timeCasa, timeFora, data) {
-    const url = `https://tabela-aposta.onrender.com/api/odds-extras/htft?timeCasa=${encodeURIComponent(timeCasa)}&timeFora=${encodeURIComponent(timeFora)}&data=${data}`;
-    try {
-      const res = await fetch(url);
-      return await res.json();
-    } catch (error) {
-      console.error('Erro ao buscar odds extras via backend:', error);
-      return {};
-    }
-  }
-
-  async function buscarOdds() {
-    const url = 'https://tabela-aposta.onrender.com/api/odds/futebol';
-
-    try {
-      tabela.innerHTML = `<tr><td colspan="10">Carregando dados...</td></tr>`;
-
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-
-      const dados = await response.json();
-
-      if (!dados || dados.length === 0) {
-        tabela.innerHTML = `<tr><td colspan="10">Nenhum dado disponível</td></tr>`;
-        return;
+        tabela.appendChild(tr);
       }
-
-      const linhasComOdds = await Promise.all(
-        dados.map(async (jogo) => {
-          const nomeJogo = `${jogo.timeCasa} x ${jogo.timeFora}`;
-          const dataJogo = jogo.data?.split('T')[0];
-
-          let maiorOver = 0;
-          let maiorUnder = 0;
-
-          jogo.odds.forEach(bk => {
-            if (!casasPermitidas.includes(bk.casa)) return;
-            if (bk.over && bk.over > maiorOver) maiorOver = bk.over;
-            if (bk.under && bk.under > maiorUnder) maiorUnder = bk.under;
-          });
-
-          const oddsExtras = await buscarOddsExtras(jogo.timeCasa, jogo.timeFora, dataJogo);
-
-          return jogo.odds
-            .filter(bk => casasPermitidas.includes(bk.casa))
-            .map(bk => criarLinha(nomeJogo, bk, maiorOver, maiorUnder, oddsExtras));
-        })
-      );
-
-      tabela.innerHTML = '';
-      linhasComOdds.flat().forEach(linha => tabela.appendChild(linha));
-
-    } catch (error) {
-      console.error('Erro ao buscar odds:', error);
-      tabela.innerHTML = `<tr><td colspan="10">Erro ao carregar os dados</td></tr>`;
     }
+  } catch (error) {
+    console.error('Erro ao buscar odds:', error);
   }
+}
 
-  btnAtualizar.addEventListener('click', buscarOdds);
-  buscarOdds(); // Busca inicial
+// Botão para atualizar tabela
+document.getElementById('btn-atualizar').addEventListener('click', () => {
+  fetchOdds();
 });
+
+// Carrega dados ao abrir a página
+fetchOdds();
