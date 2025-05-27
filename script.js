@@ -17,8 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       for (const jogo of jogos) {
         for (const casaAposta of jogo.odds) {
-          const extras = await buscarOddsExtras(jogo.timeCasa, jogo.timeFora, jogo.data);
-
           const oddCasa = parseFloat(casaAposta.h2h?.home ?? 0);
           const oddEmpate = parseFloat(casaAposta.h2h?.draw ?? 0);
           const oddFora = parseFloat(casaAposta.h2h?.away ?? 0);
@@ -35,10 +33,10 @@ document.addEventListener('DOMContentLoaded', () => {
             <td class="${oddFora === maiorOdd ? 'maior-odd' : ''}">${oddFora || '-'}</td>
             <td>${casaAposta.over ?? '-'}</td>
             <td>${casaAposta.under ?? '-'}</td>
-            <td>${extras['Casa/Casa'] ?? '-'}</td>
-            <td>${extras['Casa/Empate'] ?? '-'}</td>
-            <td>${extras['Casa/Fora'] ?? '-'}</td>
-            <td>${extras['Empate/Casa'] ?? '-'}</td>
+            <td>-</td> <!-- sem odds extras -->
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
           `;
 
           tabelaBody.appendChild(tr);
@@ -46,18 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (error) {
       console.error('Erro ao carregar odds:', error);
-    }
-  }
-
-  async function buscarOddsExtras(timeCasa, timeFora, data) {
-    try {
-      const res = await axios.get(`${baseUrl}/api/odds-extras/htft`, {
-        params: { timeCasa, timeFora, data }
-      });
-      return res.data;
-    } catch (error) {
-      console.error('Erro ao buscar odds extras:', error.response?.data ?? error.message);
-      return {};
     }
   }
 
