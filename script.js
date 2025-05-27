@@ -4,13 +4,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabelaBody = document.querySelector('#tabela-jogos tbody');
   const btnAtualizar = document.getElementById('atualizar');
 
-  if (btnAtualizar) {
-    btnAtualizar.addEventListener('click', () => {
-      carregarOdds();
-    });
-  } else {
-    console.warn('Botão Atualizar não encontrado!');
-  }
+  btnAtualizar.addEventListener('click', () => {
+    carregarOdds();
+  });
 
   async function carregarOdds() {
     tabelaBody.innerHTML = ''; // limpa a tabela
@@ -39,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
           `;
 
           tabelaBody.appendChild(tr);
+          destacarMaiorOdd(tr);
         }
       }
     } catch (error) {
@@ -58,6 +55,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Carrega odds automaticamente ao abrir a página
+  function destacarMaiorOdd(tr) {
+    const indices = [1, 2, 3]; // índices de Casa, Empate e Fora
+    const odds = indices.map(i => parseFloat(tr.children[i].textContent) || 0);
+    const maior = Math.max(...odds);
+
+    indices.forEach(i => {
+      if (parseFloat(tr.children[i].textContent) === maior) {
+        tr.children[i].style.backgroundColor = '#ffff00'; // amarelo
+        tr.children[i].style.fontWeight = 'bold';
+      }
+    });
+  }
+
+  // Carrega odds ao abrir a página
   carregarOdds();
 });
