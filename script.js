@@ -1,4 +1,6 @@
-const baseUrl = 'https://tabela-aposta.onrender.com';
+const baseUrl = window.location.hostname.includes('localhost')
+  ? 'http://localhost:3000'
+  : 'https://tabela-aposta.onrender.com';
 
 document.addEventListener('DOMContentLoaded', () => {
   const tabelaBody = document.querySelector('#tabela-jogos tbody');
@@ -15,17 +17,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await axios.get(`${baseUrl}/api/odds/futebol`);
       const jogos = res.data;
 
+      if (!jogos || jogos.length === 0) {
+        tabelaBody.innerHTML = `<tr><td colspan="10">Nenhum jogo encontrado.</td></tr>`;
+        return;
+      }
+
       for (const jogo of jogos) {
         for (const casaAposta of jogo.odds) {
+          const extras = await buscarOddsExtras(jogo.timeCasa, jogo.timeFora, jogo.data);
+
           const oddCasa = parseFloat(casaAposta.h2h?.home ?? 0);
           const oddEmpate = parseFloat(casaAposta.h2h?.draw ?? 0);
           const oddFora = parseFloat(casaAposta.h2h?.away ?? 0);
 
-          // Determina a maior odd
           const maiorOdd = Math.max(oddCasa, oddEmpate, oddFora);
 
           const tr = document.createElement('tr');
-
           tr.innerHTML = `
             <td>${jogo.timeCasa} x ${jogo.timeFora}</td>
             <td class="${oddCasa === maiorOdd ? 'maior-odd' : ''}">${oddCasa || '-'}</td>
@@ -33,10 +40,10 @@ document.addEventListener('DOMContentLoaded', () => {
             <td class="${oddFora === maiorOdd ? 'maior-odd' : ''}">${oddFora || '-'}</td>
             <td>${casaAposta.over ?? '-'}</td>
             <td>${casaAposta.under ?? '-'}</td>
-            <td>-</td> <!-- sem odds extras -->
-            <td>-</td>
-            <td>-</td>
-            <td>-</td>
+            <td>${extras['Casa/Casa'] ?? '-'}</td>
+            <td>${extras['Casa/Empate'] ?? '-'}</td>
+            <td>${extras['Casa/Fora'] ?? '-'}</td>
+            <td>${extras['Empate/Casa'] ?? '-'}</td>
           `;
 
           tabelaBody.appendChild(tr);
@@ -44,6 +51,19 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (error) {
       console.error('Erro ao carregar odds:', error);
+      tabelaBody.innerHTML = `<tr><td colspan="10">Erro ao carregar dados.</td></tr>`;
+    }
+  }
+
+  async function buscarOddsExtras(timeCasa, timeFora, data) {
+    try {
+      const res = await axios.get(`${baseUrl}/api/odds-extras/htft`, {
+        params: { timeCasa, timeFora, data }
+      });
+      return res.data;
+    } catch (error) {
+      console.error('Erro ao buscar odds extras:', error.response?.data ?? error.message);
+      return {};
     }
   }
 
