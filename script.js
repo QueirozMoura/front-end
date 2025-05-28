@@ -40,10 +40,10 @@ document.addEventListener('DOMContentLoaded', () => {
             <td class="${oddFora === maiorOdd ? 'maior-odd' : ''}">${oddFora || '-'}</td>
             <td>${casaAposta.over ?? '-'}</td>
             <td>${casaAposta.under ?? '-'}</td>
-            <td>${extras['Casa/Casa'] ?? '-'}</td>
-            <td>${extras['Casa/Empate'] ?? '-'}</td>
-            <td>${extras['Casa/Fora'] ?? '-'}</td>
-            <td>${extras['Empate/Casa'] ?? '-'}</td>
+            <td>${extras?.['Casa/Casa'] ?? '-'}</td>
+            <td>${extras?.['Casa/Empate'] ?? '-'}</td>
+            <td>${extras?.['Casa/Fora'] ?? '-'}</td>
+            <td>${extras?.['Empate/Casa'] ?? '-'}</td>
           `;
 
           tabelaBody.appendChild(tr);
@@ -62,11 +62,11 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       return res.data;
     } catch (error) {
-      console.error('Erro ao buscar odds extras:', error.response?.data ?? error.message);
+      console.warn('Odds extras indisponíveis:', error.response?.data ?? error.message);
       return {};
     }
   }
 
-  // Carrega odds ao abrir a página
+  // Carrega automaticamente ao iniciar
   carregarOdds();
 });
