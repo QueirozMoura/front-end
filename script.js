@@ -27,23 +27,21 @@ document.addEventListener('DOMContentLoaded', () => {
           const oddEmpate = parseFloat(casaAposta.h2h?.draw ?? 0);
           const oddFora = parseFloat(casaAposta.h2h?.away ?? 0);
 
-          // Odds Over/Under 2.5 gols (procura nos mercados "over_under")
-          // A API provavelmente retorna odds dentro de casaAposta.markets (ou similar).
-          // Se sua API já filtra markets para over_under, pode ser direto:
-          const oddOver = casaAposta.over ?? '-';
-          const oddUnder = casaAposta.under ?? '-';
+          // Odds Over/Under 2.5 gols estão dentro de casaAposta.totals
+          const oddOver = parseFloat(casaAposta.totals?.over ?? '-');
+          const oddUnder = parseFloat(casaAposta.totals?.under ?? '-');
 
           // Determinar a maior odd entre Casa, Empate e Fora
           const maiorOdd = Math.max(oddCasa, oddEmpate, oddFora);
 
           const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td>${jogo.home_team || jogo.timeCasa || 'Time Casa'} x ${jogo.away_team || jogo.timeFora || 'Time Fora'}</td>
+            <td>${jogo.timeCasa} x ${jogo.timeFora}</td>
             <td class="${oddCasa === maiorOdd ? 'maior-odd' : ''}">${oddCasa > 0 ? oddCasa.toFixed(2) : '-'}</td>
             <td class="${oddEmpate === maiorOdd ? 'maior-odd' : ''}">${oddEmpate > 0 ? oddEmpate.toFixed(2) : '-'}</td>
             <td class="${oddFora === maiorOdd ? 'maior-odd' : ''}">${oddFora > 0 ? oddFora.toFixed(2) : '-'}</td>
-            <td>${typeof oddOver === 'number' ? oddOver.toFixed(2) : oddOver}</td>
-            <td>${typeof oddUnder === 'number' ? oddUnder.toFixed(2) : oddUnder}</td>
+            <td>${!isNaN(oddOver) ? oddOver.toFixed(2) : '-'}</td>
+            <td>${!isNaN(oddUnder) ? oddUnder.toFixed(2) : '-'}</td>
           `;
 
           tabelaBody.appendChild(tr);
