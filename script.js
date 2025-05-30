@@ -13,15 +13,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const res = await axios.get(`${baseUrl}/api/odds/futebol`);
+      console.log('Resposta da API:', res);
       const jogos = res.data;
 
-      if (!jogos || jogos.length === 0) {
+      if (!Array.isArray(jogos) || jogos.length === 0) {
         tabelaBody.innerHTML = `<tr><td colspan="7">Nenhum jogo encontrado.</td></tr>`;
         return;
       }
 
       for (const jogo of jogos) {
-        if (!jogo.odds || jogo.odds.length === 0) {
+        if (!Array.isArray(jogo.odds) || jogo.odds.length === 0) {
           tabelaBody.innerHTML += `<tr><td colspan="7">Nenhuma casa de aposta disponível para o jogo ${jogo.home_team} x ${jogo.away_team}</td></tr>`;
           continue;
         }
@@ -34,7 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
           const oddOver = typeof casaAposta.over === 'number' ? casaAposta.over : '-';
           const oddUnder = typeof casaAposta.under === 'number' ? casaAposta.under : '-';
 
-          // Se todos zero, maiorOdd será 0 mesmo
           const maiorOdd = Math.max(oddCasa, oddEmpate, oddFora);
 
           const tr = document.createElement('tr');
@@ -56,6 +56,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Carrega automaticamente ao iniciar
   carregarOdds();
 });
