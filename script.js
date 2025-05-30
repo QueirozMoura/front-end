@@ -21,35 +21,37 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       for (const jogo of jogos) {
+        if (!jogo.odds || jogo.odds.length === 0) {
+          tabelaBody.innerHTML += `<tr><td colspan="6">Nenhuma casa de aposta disponível para o jogo ${jogo.home_team} x ${jogo.away_team}</td></tr>`;
+          continue;
+        }
+
         for (const casaAposta of jogo.odds) {
-          // Odds principais H2H
           const oddCasa = parseFloat(casaAposta.h2h?.home ?? 0);
           const oddEmpate = parseFloat(casaAposta.h2h?.draw ?? 0);
           const oddFora = parseFloat(casaAposta.h2h?.away ?? 0);
 
-          // Odds Over/Under 2.5 gols estão dentro de casaAposta.totals
-          const oddOver = parseFloat(casaAposta.totals?.over ?? '-');
-          const oddUnder = parseFloat(casaAposta.totals?.under ?? '-');
+          const oddOver = typeof casaAposta.over === 'number' ? casaAposta.over : '-';
+          const oddUnder = typeof casaAposta.under === 'number' ? casaAposta.under : '-';
 
-          // Determinar a maior odd entre Casa, Empate e Fora
           const maiorOdd = Math.max(oddCasa, oddEmpate, oddFora);
 
           const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td>${jogo.timeCasa} x ${jogo.timeFora}</td>
+            <td>${jogo.home_team} x ${jogo.away_team}</td>
+            <td>${casaAposta.casa}</td>
             <td class="${oddCasa === maiorOdd ? 'maior-odd' : ''}">${oddCasa > 0 ? oddCasa.toFixed(2) : '-'}</td>
             <td class="${oddEmpate === maiorOdd ? 'maior-odd' : ''}">${oddEmpate > 0 ? oddEmpate.toFixed(2) : '-'}</td>
             <td class="${oddFora === maiorOdd ? 'maior-odd' : ''}">${oddFora > 0 ? oddFora.toFixed(2) : '-'}</td>
-            <td>${!isNaN(oddOver) ? oddOver.toFixed(2) : '-'}</td>
-            <td>${!isNaN(oddUnder) ? oddUnder.toFixed(2) : '-'}</td>
+            <td>${typeof oddOver === 'number' ? oddOver.toFixed(2) : oddOver}</td>
+            <td>${typeof oddUnder === 'number' ? oddUnder.toFixed(2) : oddUnder}</td>
           `;
-
           tabelaBody.appendChild(tr);
         }
       }
     } catch (error) {
       console.error('Erro ao carregar odds:', error);
-      tabelaBody.innerHTML = `<tr><td colspan="6">Erro ao carregar dados.</td></tr>`;
+      tabelaBody.innerHTML = `<tr><td colspan="7">Erro ao carregar dados.</td></tr>`;
     }
   }
 
