@@ -1,60 +1,67 @@
-const baseUrl = window.location.hostname.includes('localhost')
-  ? 'http://localhost:3000'
-  : 'https://tabela-aposta.onrender.com';
+const baseUrl = 'https://tabela-aposta.onrender.com';
 
 document.addEventListener('DOMContentLoaded', () => {
   const tabelaBody = document.querySelector('#tabela-jogos tbody');
   const btnAtualizar = document.getElementById('atualizar');
 
-  btnAtualizar.addEventListener('click', carregarOdds);
+  btnAtualizar.addEventListener('click', () => {
+    carregarOdds();
+  });
 
   async function carregarOdds() {
     tabelaBody.innerHTML = ''; // limpa a tabela
 
     try {
       const res = await axios.get(`${baseUrl}/api/odds/futebol`);
-      console.log('Resposta da API:', res);
       const jogos = res.data;
 
-      if (!Array.isArray(jogos) || jogos.length === 0) {
-        tabelaBody.innerHTML = `<tr><td colspan="7">Nenhum jogo encontrado.</td></tr>`;
-        return;
-      }
-
       for (const jogo of jogos) {
-        if (!Array.isArray(jogo.odds) || jogo.odds.length === 0) {
-          tabelaBody.innerHTML += `<tr><td colspan="7">Nenhuma casa de aposta disponível para o jogo ${jogo.home_team} x ${jogo.away_team}</td></tr>`;
-          continue;
-        }
-
+        // Cada jogo tem um array de odds por casa de aposta
         for (const casaAposta of jogo.odds) {
-          const oddCasa = casaAposta.h2h && !isNaN(parseFloat(casaAposta.h2h.home)) ? parseFloat(casaAposta.h2h.home) : 0;
-          const oddEmpate = casaAposta.h2h && !isNaN(parseFloat(casaAposta.h2h.draw)) ? parseFloat(casaAposta.h2h.draw) : 0;
-          const oddFora = casaAposta.h2h && !isNaN(parseFloat(casaAposta.h2h.away)) ? parseFloat(casaAposta.h2h.away) : 0;
+          const oddCasa = parseFloat(casaAposta.h2h?.home ?? 0);
+          const oddEmpate = parseFloat(casaAposta.h2h?.draw ?? 0);
+          const oddFora = parseFloat(casaAposta.h2h?.away ?? 0);
 
-          const oddOver = typeof casaAposta.over === 'number' ? casaAposta.over : '-';
-          const oddUnder = typeof casaAposta.under === 'number' ? casaAposta.under : '-';
+          // Busca odds extras (half time/full time) pela API do backend, se existir
+          const extras = await buscarOddsExtras(jogo.home_team, jogo.away_team, jogo.commence_time);
 
           const maiorOdd = Math.max(oddCasa, oddEmpate, oddFora);
 
           const tr = document.createElement('tr');
+
           tr.innerHTML = `
             <td>${jogo.home_team} x ${jogo.away_team}</td>
-            <td>${casaAposta.casa}</td>
-            <td class="${oddCasa === maiorOdd && maiorOdd > 0 ? 'maior-odd' : ''}">${oddCasa > 0 ? oddCasa.toFixed(2) : '-'}</td>
-            <td class="${oddEmpate === maiorOdd && maiorOdd > 0 ? 'maior-odd' : ''}">${oddEmpate > 0 ? oddEmpate.toFixed(2) : '-'}</td>
-            <td class="${oddFora === maiorOdd && maiorOdd > 0 ? 'maior-odd' : ''}">${oddFora > 0 ? oddFora.toFixed(2) : '-'}</td>
-            <td>${typeof oddOver === 'number' ? oddOver.toFixed(2) : oddOver}</td>
-            <td>${typeof oddUnder === 'number' ? oddUnder.toFixed(2) : oddUnder}</td>
+            <td class="${oddCasa === maiorOdd ? 'maior-odd' : ''}">${oddCasa || '-'}</td>
+            <td class="${oddEmpate === maiorOdd ? 'maior-odd' : ''}">${oddEmpate || '-'}</td>
+            <td class="${oddFora === maiorOdd ? 'maior-odd' : ''}">${oddFora || '-'}</td>
+            <td>${casaAposta.over ?? '-'}</td>
+            <td>${casaAposta.under ?? '-'}</td>
+            <td>${extras['Casa/Casa'] ?? '-'}</td>
+            <td>${extras['Casa/Empate'] ?? '-'}</td>
+            <td>${extras['Casa/Fora'] ?? '-'}</td>
+            <td>${extras['Empate/Casa'] ?? '-'}</td>
           `;
+
           tabelaBody.appendChild(tr);
         }
       }
     } catch (error) {
       console.error('Erro ao carregar odds:', error);
-      tabelaBody.innerHTML = `<tr><td colspan="7">Erro ao carregar dados. Veja o console para mais detalhes.</td></tr>`;
     }
   }
 
+  async function buscarOddsExtras(timeCasa, timeFora, data) {
+    try {
+      const res = await axios.get(`${baseUrl}/api/odds-extras/htft`, {
+        params: { timeCasa, timeFora, data }
+      });
+      return res.data;
+    } catch (error) {
+      console.error('Erro ao buscar odds extras:', error.response?.data ?? error.message);
+      return {};
+    }
+  }
+
+  // Carrega odds ao abrir a página
   carregarOdds();
 });
